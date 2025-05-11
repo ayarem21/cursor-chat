@@ -13,23 +13,23 @@ export interface Theme {
 export const lightTheme: Theme = {
   name: 'light',
   colors: {
-    background: '#FFFFFF',
-    text: '#1E1F22',
-    primary: '#8AB4F8',
-    secondary: '#F28B82',
-    inputBackground: '#F0F2F5',
-    buttonHover: 'rgba(0, 0, 0, 0.1)',
+    background: '#E8E9EC',
+    text: '#4A5568',
+    primary: '#5D7AB9',
+    secondary: '#C65F5F',
+    inputBackground: '#F0F1F4',
+    buttonHover: 'rgba(0, 0, 0, 0.08)',
   },
 };
 
 export const darkTheme: Theme = {
   name: 'dark',
   colors: {
-    background: '#1E1F22',
-    text: '#FFFFFF',
-    primary: '#8AB4F8',
-    secondary: '#F28B82',
-    inputBackground: '#303134',
-    buttonHover: 'rgba(255, 255, 255, 0.1)',
+    background: '#141518',
+    text: '#B0B8C1',
+    primary: '#546DA8',
+    secondary: '#B35757',
+    inputBackground: '#1E2124',
+    buttonHover: 'rgba(255, 255, 255, 0.03)',
   },
 }; 

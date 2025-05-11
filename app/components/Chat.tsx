@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faXmark, faPaperPlane, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
+import { faXmark, faPaperPlane, faSun, faMoon, faSpinner, faUser, faRobot, faImage } from '@fortawesome/free-solid-svg-icons';
 import { OverlayTrigger, Tooltip, Button } from 'react-bootstrap';
 import ReactMarkdown from 'react-markdown';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -12,6 +12,7 @@ import VoicePlayback from './VoicePlayback';
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  image?: string; // Base64 encoded image or URL
 }
 
 const sampleQuestions = [
@@ -26,6 +27,8 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -36,13 +39,29 @@ export default function Chat() {
     scrollToBottom();
   }, [messages]);
 
-  const sendMessage = async (content: string) => {
-    if (!content.trim()) return;
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-    const newMessage: Message = { role: 'user', content };
+  const sendMessage = async (content: string) => {
+    if (!content.trim() && !selectedImage) return;
+
+    const newMessage: Message = { 
+      role: 'user', 
+      content: content.trim(), // Remove default text for image-only messages
+      ...(selectedImage && { image: selectedImage })
+    };
     const newMessages: Message[] = [...messages, newMessage];
     setMessages(newMessages);
     setInput('');
+    setSelectedImage(null);
     setIsLoading(true);
 
     try {
@@ -74,8 +93,8 @@ export default function Chat() {
       {/* Header */}
       <div className="p-4 text-center">
         <h1 className="mb-5" style={{ fontSize: '2rem', fontWeight: 'normal' }}>
-          <span style={{ color: theme.colors.primary }}>Вітаю</span>
-          <span style={{ color: theme.colors.secondary }}>, Artem!</span>
+          <span style={{ color: theme.colors.primary }}>Hello, </span>
+          <span style={{ color: theme.colors.secondary }}>Shrek!</span>
         </h1>
       </div>
 
@@ -85,17 +104,51 @@ export default function Chat() {
           {messages.map((message, index) => (
             <div key={index} className="mb-4">
               {message.role === 'user' ? (
-                <div className="d-flex align-items-start mb-4">
-                  <div className="me-3">
-                    <img 
-                      src="https://api.dicebear.com/7.x/adventurer-neutral/svg?seed=Felix"
-                      alt="User Avatar"
-                      className="rounded-circle"
-                      style={{ width: '32px', height: '32px', objectFit: 'cover' }}
-                    />
+                <div className="d-flex align-items-start mb-4 flex-row-reverse">
+                  <div className="ms-3">
+                    <div 
+                      className="rounded-circle d-flex align-items-center justify-content-center"
+                      style={{ 
+                        width: '32px', 
+                        height: '32px', 
+                        backgroundColor: theme.colors.inputBackground,
+                        border: `1px solid ${theme.colors.buttonHover}`
+                      }}
+                    >
+                      <FontAwesomeIcon 
+                        icon={faUser} 
+                        style={{ 
+                          color: theme.colors.text,
+                          fontSize: '16px'
+                        }} 
+                      />
+                    </div>
                   </div>
-                  <div className="flex-grow-1">
-                    <div style={{ color: theme.colors.text }} className="markdown-content">
+                  <div className="flex-grow-1 d-flex justify-content-end">
+                    <div 
+                      style={{ 
+                        color: theme.colors.text,
+                        backgroundColor: theme.colors.inputBackground,
+                        padding: '8px 16px',
+                        borderRadius: '16px',
+                        maxWidth: 'fit-content',
+                        fontSize: '14px'
+                      }} 
+                      className="markdown-content"
+                    >
+                      {message.image && (
+                        <div className="mb-2">
+                          <img 
+                            src={message.image} 
+                            alt="Uploaded content"
+                            style={{ 
+                              maxWidth: '300px', 
+                              maxHeight: '300px',
+                              borderRadius: '8px'
+                            }} 
+                          />
+                        </div>
+                      )}
                       <ReactMarkdown>{message.content}</ReactMarkdown>
                     </div>
                   </div>
@@ -103,16 +156,36 @@ export default function Chat() {
               ) : (
                 <div className="d-flex align-items-start mb-4">
                   <div className="me-3">
-                    <img 
-                      src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Gemini"
-                      alt="Assistant Avatar"
-                      className="rounded-circle"
-                      style={{ width: '32px', height: '32px', objectFit: 'cover', backgroundColor: theme.colors.primary }}
-                    />
+                    <div 
+                      className="rounded-circle d-flex align-items-center justify-content-center"
+                      style={{ 
+                        width: '32px', 
+                        height: '32px', 
+                        backgroundColor: theme.colors.primary,
+                      }}
+                    >
+                      <FontAwesomeIcon 
+                        icon={faRobot} 
+                        style={{ 
+                          color: theme.colors.background,
+                          fontSize: '16px'
+                        }} 
+                      />
+                    </div>
                   </div>
                   <div className="flex-grow-1">
                     <div className="d-flex align-items-start">
-                      <div style={{ color: theme.colors.text }} className="flex-grow-1 markdown-content">
+                      <div 
+                        style={{ 
+                          color: theme.colors.text,
+                          backgroundColor: theme.colors.primary + '33',
+                          padding: '8px 16px',
+                          borderRadius: '16px',
+                          maxWidth: 'fit-content',
+                          fontSize: '14px'
+                        }} 
+                        className="markdown-content"
+                      >
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                       <div className="ms-2">
@@ -124,6 +197,44 @@ export default function Chat() {
               )}
             </div>
           ))}
+          {isLoading && (
+            <div className="d-flex align-items-start mb-4">
+              <div className="me-3">
+                <div 
+                  className="rounded-circle d-flex align-items-center justify-content-center"
+                  style={{ 
+                    width: '32px', 
+                    height: '32px', 
+                    backgroundColor: theme.colors.primary,
+                  }}
+                >
+                  <FontAwesomeIcon 
+                    icon={faRobot} 
+                    style={{ 
+                      color: theme.colors.background,
+                      fontSize: '16px'
+                    }} 
+                  />
+                </div>
+              </div>
+              <div className="flex-grow-1">
+                <div 
+                  className="d-flex align-items-center" 
+                  style={{ 
+                    color: theme.colors.text,
+                    backgroundColor: theme.colors.primary + '33',
+                    padding: '8px 16px',
+                    borderRadius: '16px',
+                    maxWidth: 'fit-content',
+                    fontSize: '14px'
+                  }}
+                >
+                  <FontAwesomeIcon icon={faSpinner} spin className="me-2" />
+                  Thinking...
+                </div>
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -140,10 +251,20 @@ export default function Chat() {
                     backgroundColor: `${theme.colors.primary}33`,
                     color: theme.colors.text,
                     borderRadius: '20px',
-                    transition: 'background-color 0.2s ease',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${theme.colors.primary}4D`}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = `${theme.colors.primary}33`}
+                  onMouseEnter={() => {
+                    const button = document.querySelector(`button[data-question="${question}"]`) as HTMLButtonElement;
+                    if (button) {
+                      button.style.backgroundColor = `${theme.colors.primary}4D`;
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    const button = document.querySelector(`button[data-question="${question}"]`) as HTMLButtonElement;
+                    if (button) {
+                      button.style.backgroundColor = `${theme.colors.primary}33`;
+                    }
+                  }}
+                  data-question={question}
                 >
                   {question}
                 </button>
@@ -156,6 +277,48 @@ export default function Chat() {
       {/* Input Area */}
       <div className="fixed-bottom p-4" style={{ backgroundColor: theme.colors.background }}>
         <div className="mx-auto" style={{ maxWidth: '800px' }}>
+          {selectedImage && (
+            <div 
+              className="mb-2 position-relative" 
+              style={{ 
+                maxWidth: '200px',
+                marginLeft: '60px'
+              }}
+            >
+              <img 
+                src={selectedImage} 
+                alt="Selected" 
+                style={{ 
+                  width: '100%', 
+                  borderRadius: '8px',
+                  border: `1px solid ${theme.colors.buttonHover}`
+                }} 
+              />
+              <button
+                className="position-absolute btn btn-link p-0 d-flex align-items-center justify-content-center"
+                onClick={() => setSelectedImage(null)}
+                style={{ 
+                  backgroundColor: `${theme.colors.buttonHover}CC`,
+                  borderRadius: '50%',
+                  top: '4px',
+                  right: '4px',
+                  width: '20px',
+                  height: '20px',
+                  minWidth: '20px',
+                  border: 'none'
+                }}
+              >
+                <FontAwesomeIcon 
+                  icon={faXmark} 
+                  style={{ 
+                    fontSize: '12px', 
+                    color: theme.colors.text,
+                    lineHeight: 1
+                  }} 
+                />
+              </button>
+            </div>
+          )}
           <div className="d-flex align-items-center rounded-pill" 
                style={{ backgroundColor: theme.colors.inputBackground, padding: '8px 16px' }}>
             <button className="btn btn-link p-0 me-2 d-flex align-items-center justify-content-center"
@@ -169,7 +332,7 @@ export default function Chat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
-              placeholder="Запитайте Gemini"
+              placeholder={selectedImage ? "Add a message or send image directly" : "Запитайте Gemini"}
               className="form-control border-0 mx-2"
               style={{ 
                 backgroundColor: 'transparent',
@@ -179,11 +342,30 @@ export default function Chat() {
                 color: theme.colors.text
               }}
             />
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              style={{ display: 'none' }}
+            />
             
-            {input && (
+            <button 
+              className="btn btn-link p-0 me-2 d-flex align-items-center justify-content-center"
+              onClick={() => fileInputRef.current?.click()}
+              style={{ width: '36px', height: '36px', minWidth: '36px', color: theme.colors.text }}
+            >
+              <FontAwesomeIcon icon={faImage} />
+            </button>
+            
+            {(input || selectedImage) && (
               <button 
-                className="btn btn-link p-0 d-flex align-items-center justify-content-center"
-                onClick={() => setInput('')}
+                className="btn btn-link p-0 me-2 d-flex align-items-center justify-content-center"
+                onClick={() => {
+                  setInput('');
+                  setSelectedImage(null);
+                }}
                 style={{ width: '36px', height: '36px', minWidth: '36px', color: theme.colors.text }}
               >
                 <FontAwesomeIcon icon={faXmark} />
@@ -193,8 +375,14 @@ export default function Chat() {
             <button
               className="btn btn-link p-0 d-flex align-items-center justify-content-center"
               onClick={() => sendMessage(input)}
-              disabled={isLoading || !input.trim()}
-              style={{ width: '36px', height: '36px', minWidth: '36px', color: theme.colors.text }}
+              disabled={isLoading || (!input.trim() && !selectedImage)}
+              style={{ 
+                width: '36px', 
+                height: '36px', 
+                minWidth: '36px', 
+                color: theme.colors.text,
+                opacity: (!input.trim() && !selectedImage) || isLoading ? 0.5 : 1
+              }}
             >
               <FontAwesomeIcon icon={faPaperPlane} />
             </button>
@@ -228,7 +416,7 @@ export default function Chat() {
           line-height: 1.5;
         }
         .markdown-content p {
-          margin-bottom: 1rem;
+          margin-bottom: 0;
         }
         .markdown-content strong {
           font-weight: 600;

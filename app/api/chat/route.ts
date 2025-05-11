@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  image?: string;
 }
 
 // Gemini API configuration
@@ -11,9 +12,53 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 async function makeGeminiRequest(messages: Message[]) {
-  // Convert our chat messages to Gemini format
   const lastMessage = messages[messages.length - 1];
   
+  // Prepare the content parts
+  const parts = [];
+  
+  // System prompt to ensure proper formatting
+  parts.push({
+    text: `You are a helpful AI assistant. When showing code examples or technical content:
+1. Always use proper markdown formatting
+2. Use \`backticks\` for inline code
+3. Use triple backticks with language name for code blocks
+4. Format lists and tables properly
+5. Keep original formatting and spacing in code examples
+6. If you see code or command examples in an image, reproduce them exactly as shown`
+  });
+  
+  // If there's an image but no text content, use a better prompt
+  const hasImage = !!lastMessage.image;
+  const hasText = !!lastMessage.content.trim();
+  
+  // Add text content
+  if (hasImage && !hasText) {
+    parts.push({
+      text: "Please analyze this image and describe what you see. If the image contains code, commands, or technical content:\n" +
+        "1. Show the exact code/commands as they appear\n" +
+        "2. Explain what each part means\n" +
+        "3. Provide proper formatting using markdown\n" +
+        "4. Preserve any special characters or symbols exactly as shown"
+    });
+  } else if (hasText) {
+    parts.push({
+      text: lastMessage.content
+    });
+  }
+  
+  // Add image content if present
+  if (lastMessage.image) {
+    // Remove the "data:image/[type];base64," prefix
+    const base64Image = lastMessage.image.split(',')[1];
+    parts.push({
+      inlineData: {
+        data: base64Image,
+        mimeType: lastMessage.image.split(';')[0].split(':')[1]
+      }
+    });
+  }
+
   const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
     method: 'POST',
     headers: {
@@ -21,10 +66,32 @@ async function makeGeminiRequest(messages: Message[]) {
     },
     body: JSON.stringify({
       contents: [{
-        parts: [{
-          text: lastMessage.content
-        }]
-      }]
+        parts: parts
+      }],
+      generationConfig: {
+        temperature: 0.1, // Lower temperature for more precise responses
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 2048,
+      },
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        }
+      ]
     })
   });
 
