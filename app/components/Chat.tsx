@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark, faPaperPlane, faSun, faMoon, faSpinner, faUser, faRobot, faImage } from '@fortawesome/free-solid-svg-icons';
 import { OverlayTrigger, Tooltip, Button } from 'react-bootstrap';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { Components } from 'react-markdown';
+import type { ComponentPropsWithoutRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useTheme } from '../contexts/ThemeContext';
 import VoicePlayback from './VoicePlayback';
@@ -188,8 +189,9 @@ export default function Chat() {
                       >
                         <ReactMarkdown 
                           components={{
-                            code({node, inline, className, children, ...props}) {
+                            code: function Code({ className, children, ...props }: ComponentPropsWithoutRef<'code'> & { inline?: boolean }) {
                               const match = /language-(\w+)/.exec(className || '');
+                              const inline = props['data-inline'];
                               return !inline && match ? (
                                 <div style={{ 
                                   backgroundColor: theme.colors.inputBackground,
