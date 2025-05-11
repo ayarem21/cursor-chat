@@ -100,7 +100,7 @@ export default function Chat() {
 
       {/* Messages */}
       <div className="flex-grow-1 overflow-auto px-4 pb-5 pt-2" style={{ height: 'calc(100vh - 240px)' }}>
-        <div className="mx-auto" style={{ maxWidth: '800px' }}>
+        <div className="chat-container mx-auto" style={{ maxWidth: '800px' }}>
           {messages.map((message, index) => (
             <div key={index} className="mb-4">
               {message.role === 'user' ? (
@@ -131,7 +131,7 @@ export default function Chat() {
                         backgroundColor: theme.colors.inputBackground,
                         padding: '8px 16px',
                         borderRadius: '16px',
-                        maxWidth: 'fit-content',
+                        maxWidth: '100%',
                         fontSize: '14px'
                       }} 
                       className="markdown-content"
@@ -142,8 +142,8 @@ export default function Chat() {
                             src={message.image} 
                             alt="Uploaded content"
                             style={{ 
-                              maxWidth: '300px', 
-                              maxHeight: '300px',
+                              maxWidth: '100%', 
+                              height: 'auto',
                               borderRadius: '8px'
                             }} 
                           />
@@ -179,14 +179,40 @@ export default function Chat() {
                         style={{ 
                           color: theme.colors.text,
                           backgroundColor: theme.colors.primary + '33',
-                          padding: '8px 16px',
+                          padding: '12px 16px',
                           borderRadius: '16px',
-                          maxWidth: 'fit-content',
+                          maxWidth: '100%',
                           fontSize: '14px'
                         }} 
                         className="markdown-content"
                       >
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                        <ReactMarkdown 
+                          components={{
+                            code({node, inline, className, children, ...props}) {
+                              const match = /language-(\w+)/.exec(className || '');
+                              return !inline && match ? (
+                                <div style={{ 
+                                  backgroundColor: theme.colors.inputBackground,
+                                  padding: '12px',
+                                  borderRadius: '8px',
+                                  overflowX: 'auto',
+                                  marginTop: '8px',
+                                  marginBottom: '8px'
+                                }}>
+                                  <code className={className} {...props}>
+                                    {children}
+                                  </code>
+                                </div>
+                              ) : (
+                                <code className={className} {...props}>
+                                  {children}
+                                </code>
+                              );
+                            }
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
                       </div>
                       <div className="ms-2">
                         <VoicePlayback text={message.content} />
@@ -276,7 +302,7 @@ export default function Chat() {
 
       {/* Input Area */}
       <div className="fixed-bottom p-4" style={{ backgroundColor: theme.colors.background }}>
-        <div className="mx-auto" style={{ maxWidth: '800px' }}>
+        <div className="chat-container mx-auto" style={{ maxWidth: '800px' }}>
           {selectedImage && (
             <div 
               className="mb-2 position-relative" 
@@ -393,6 +419,11 @@ export default function Chat() {
       <style jsx global>{`
         body {
           background-color: ${theme.colors.background};
+        }
+        .chat-container {
+          width: 100%;
+          max-width: 800px;
+          padding: 0 60px;
         }
         .btn-link:hover {
           background-color: ${theme.colors.buttonHover};

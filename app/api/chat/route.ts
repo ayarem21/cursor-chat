@@ -17,17 +17,6 @@ async function makeGeminiRequest(messages: Message[]) {
   // Prepare the content parts
   const parts = [];
   
-  // System prompt to ensure proper formatting
-  parts.push({
-    text: `You are a helpful AI assistant. When showing code examples or technical content:
-1. Always use proper markdown formatting
-2. Use \`backticks\` for inline code
-3. Use triple backticks with language name for code blocks
-4. Format lists and tables properly
-5. Keep original formatting and spacing in code examples
-6. If you see code or command examples in an image, reproduce them exactly as shown`
-  });
-  
   // If there's an image but no text content, use a better prompt
   const hasImage = !!lastMessage.image;
   const hasText = !!lastMessage.content.trim();
@@ -35,11 +24,7 @@ async function makeGeminiRequest(messages: Message[]) {
   // Add text content
   if (hasImage && !hasText) {
     parts.push({
-      text: "Please analyze this image and describe what you see. If the image contains code, commands, or technical content:\n" +
-        "1. Show the exact code/commands as they appear\n" +
-        "2. Explain what each part means\n" +
-        "3. Provide proper formatting using markdown\n" +
-        "4. Preserve any special characters or symbols exactly as shown"
+      text: "What do you see in this image?"
     });
   } else if (hasText) {
     parts.push({
@@ -69,7 +54,7 @@ async function makeGeminiRequest(messages: Message[]) {
         parts: parts
       }],
       generationConfig: {
-        temperature: 0.1, // Lower temperature for more precise responses
+        temperature: 0.1,
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 2048,
